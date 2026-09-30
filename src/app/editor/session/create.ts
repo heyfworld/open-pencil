@@ -132,7 +132,7 @@ export function createEditorStore(initialGraph?: SceneGraph) {
   // Spread all core Editor methods, then override getters and add app-specific.
 
   const panes = createCanvasPaneRegistry(state)
-  const designCheck = createDesignCheck(editor, state, () => viewportSize)
+  const designCheck = createDesignCheck(editor, state)
 
   function progressUnit(phase: string): 'fonts' | 'pages' | undefined {
     if (phase === 'resolving-fonts') return 'fonts'

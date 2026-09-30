@@ -277,9 +277,22 @@ function collectProps(node: SceneNode, graph: SceneGraph): [string, unknown][] {
 
 // --- JSX rendering ---
 
-function nodeToJSX(node: SceneNode, graph: SceneGraph, indent: number): string {
+/** Design JSX with the layer behind each element, in the order elements open. */
+export interface DesignJSXWithLayers {
+  code: string
+  /** One id per JSX element, in pre-order, so editors can link elements to layers. */
+  layerIds: string[]
+}
+
+function nodeToJSX(
+  node: SceneNode,
+  graph: SceneGraph,
+  indent: number,
+  layerIds?: string[]
+): string {
   const tag = NODE_TYPE_TO_TAG[node.type]
   if (!tag) return ''
+  layerIds?.push(node.id)
 
   const prefix = '  '.repeat(indent)
   const attrsStr = collectProps(node, graph)
@@ -307,7 +320,7 @@ function nodeToJSX(node: SceneNode, graph: SceneGraph, indent: number): string {
 
   const childJSX = children
     .filter((c) => c.visible)
-    .map((c) => nodeToJSX(c, graph, indent + 1))
+    .map((c) => nodeToJSX(c, graph, indent + 1, layerIds))
     .filter(Boolean)
 
   if (childJSX.length === 0) return `${prefix}${opening} />`
@@ -322,8 +335,20 @@ export function sceneNodeToJSX(nodeId: string, graph: SceneGraph): string {
 }
 
 export function selectionToJSX(nodeIds: string[], graph: SceneGraph): string {
-  return nodeIds
-    .map((id) => sceneNodeToJSX(id, graph))
+  return selectionToJSXWithLayers(nodeIds, graph).code
+}
+
+export function selectionToJSXWithLayers(
+  nodeIds: string[],
+  graph: SceneGraph
+): DesignJSXWithLayers {
+  const layerIds: string[] = []
+  const code = nodeIds
+    .map((id) => {
+      const node = graph.getNode(id)
+      return node ? nodeToJSX(node, graph, 0, layerIds) : ''
+    })
     .filter(Boolean)
     .join('\n\n')
+  return { code, layerIds }
 }

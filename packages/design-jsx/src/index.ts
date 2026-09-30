@@ -74,9 +74,19 @@ export {
   type DesignJSXHelperDefinition,
   type DesignJSXPropertyDefinition
 } from './schema'
-export { transformDesignJSXExpression } from './transform'
+export {
+  transformDesignJSXExpression,
+  transformDesignJSXProgram,
+  type DesignJSXChunk,
+  type DesignJSXProgram
+} from './transform'
 
-export { sceneNodeToJSX, selectionToJSX } from './export'
+export {
+  sceneNodeToJSX,
+  selectionToJSX,
+  selectionToJSXWithLayers,
+  type DesignJSXWithLayers
+} from './export'
 export { JSX_REFERENCE, AUTHORING_EXAMPLES, type AuthoringExample } from './reference'
 export {
   createStreamingJSXParser,

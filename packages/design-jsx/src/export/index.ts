@@ -328,6 +328,37 @@ function nodeToJSX(
   return [`${prefix}${opening}>`, ...childJSX, `${prefix}</${tag}>`].join('\n')
 }
 
+/**
+ * One layer as Design JSX writes it, so an editor can patch the code a person has edited
+ * instead of writing it again.
+ */
+export interface DesignJSXElement {
+  tag: string
+  /** Each attribute as written, keyed by name: `w={320}`, `name="Card"`. */
+  attributes: Record<string, string>
+  /** Escaped text content of a text layer, else `null`. */
+  text: string | null
+  /** The layers written as child elements, in order. */
+  childIds: string[]
+}
+
+export function designJSXElement(nodeId: string, graph: SceneGraph): DesignJSXElement | null {
+  const node = graph.getNode(nodeId)
+  const tag = node && NODE_TYPE_TO_TAG[node.type]
+  if (!node || !tag) return null
+  const attributes = Object.fromEntries(
+    collectProps(node, graph).map(([key, value]) => [key, formatProp(key, value)])
+  )
+  if (node.type === 'TEXT') {
+    return { tag, attributes, text: node.text ? escapeJSXText(node.text) : null, childIds: [] }
+  }
+  const childIds = graph
+    .getChildren(node.id)
+    .filter((child) => child.visible && NODE_TYPE_TO_TAG[child.type])
+    .map((child) => child.id)
+  return { tag, attributes, text: null, childIds }
+}
+
 export function sceneNodeToJSX(nodeId: string, graph: SceneGraph): string {
   const node = graph.getNode(nodeId)
   if (!node) return ''

@@ -82,11 +82,14 @@ export {
 } from './transform'
 
 export {
+  designJSXElement,
   sceneNodeToJSX,
   selectionToJSX,
   selectionToJSXWithLayers,
+  type DesignJSXElement,
   type DesignJSXWithLayers
 } from './export'
+export { reconcileRenderedLayers } from './reconcile'
 export { JSX_REFERENCE, AUTHORING_EXAMPLES, type AuthoringExample } from './reference'
 export {
   createStreamingJSXParser,

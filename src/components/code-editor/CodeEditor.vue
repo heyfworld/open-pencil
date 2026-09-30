@@ -39,7 +39,8 @@ const {
   readOnly = false,
   label = 'Code',
   layerLinks = null,
-  layerIssues = []
+  layerIssues = [],
+  autofocus = false
 } = defineProps<{
   modelValue: string
   language?: CodeEditorLanguage
@@ -49,6 +50,8 @@ const {
   layerLinks?: LayerLinkSource | null
   /** Design issues to underline on the code of their layers. */
   layerIssues?: readonly LayerIssue[]
+  /** Places the caret at the end of the code once the editor mounts. */
+  autofocus?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -133,6 +136,7 @@ onMounted(() => {
     ]
   })
   syncLayers()
+  if (autofocus) focusEnd()
 })
 
 watch(
@@ -185,6 +189,12 @@ watch(resolvedAppTheme, (theme) =>
 )
 
 onBeforeUnmount(() => editor?.destroy())
+
+function focusEnd() {
+  if (!editor) return
+  editor.focus()
+  editor.dispatch({ selection: { anchor: editor.state.doc.length } })
+}
 </script>
 
 <template>

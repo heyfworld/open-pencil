@@ -21,14 +21,14 @@ import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import { DESIGN_JSX_ELEMENTS } from '@open-pencil/design-jsx'
 import { shortcutPlatform } from '@open-pencil/vue'
 
-import type { LayerIssue } from '@/app/code/layer-issues'
+import type { LayerIssue } from '@/app/code/layers/issues'
+import type { LayerLinkSource } from '@/app/code/layers/links'
 import { resolvedAppTheme } from '@/app/shell/theme'
 import { designJSXExtensions } from '@/components/code-editor/extensions'
 import { layerIssueDiagnostics, setLayerIssues } from '@/components/code-editor/layer-issues'
 import {
   layerLinks as layerLinksExtension,
-  setLayerLinks,
-  type LayerLinkSource
+  setLayerLinks
 } from '@/components/code-editor/layer-links'
 import type { CodeEditorLanguage } from '@/components/code-editor/types'
 import { codeEditorTheme } from '@/theme/code/editor'

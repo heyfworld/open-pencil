@@ -5,7 +5,9 @@ import {
   analyzeSpacing,
   analyzeTypography,
   diffCreate,
-  diffShow
+  diffShow,
+  lint,
+  lintFix
 } from './analyze'
 import { designToComponentMap, designToTokens } from './codegen'
 import {
@@ -194,6 +196,8 @@ export const EXTENDED_TOOLS: ToolDef[] = [
   // Analyze & diff
   analyzeColors,
   analyzeTypography,
+  lint,
+  lintFix,
   analyzeSpacing,
   analyzeClusters,
   analyzeOverlaps,

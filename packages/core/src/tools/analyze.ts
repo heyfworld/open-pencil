@@ -2,6 +2,7 @@ export { analyzeClusters, calcClusterConfidence } from './analyze/clusters'
 export { analyzeColors } from './analyze/colors'
 export { diffCreate, diffShow } from './analyze/diff'
 export { evalCode } from './analyze/eval'
+export { lint, lintFix } from './analyze/lint'
 export { wrapEvalCode } from './analyze/eval/wrap'
 export { analyzeOverlaps, computeOverlaps } from './analyze/overlaps'
 export type {

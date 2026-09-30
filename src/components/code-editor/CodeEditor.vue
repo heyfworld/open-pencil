@@ -19,7 +19,6 @@ import {
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 
 import { DESIGN_JSX_ELEMENTS } from '@open-pencil/design-jsx'
-import { shortcutPlatform } from '@open-pencil/vue'
 
 import type { LayerIssue } from '@/app/code/layers/issues'
 import type { LayerLinkSource } from '@/app/code/layers/links'
@@ -56,16 +55,15 @@ const {
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
-  /** The layers of the element under the pointer, or `null` when it leaves them. */
-  hoverLayers: [nodeIds: readonly string[] | null]
-  /** The layers of an element ⌘-clicked (Ctrl-clicked outside macOS). */
-  revealLayers: [nodeIds: readonly string[]]
+  /** The layers of the element around the cursor, or `null` when there is none or focus left. */
+  activeLayers: [nodeIds: readonly string[] | null]
+  /** Focus left the editor, which ends an edit. */
+  blur: []
 }>()
 
 const RUNTIME_TYPES = new Map(
   DESIGN_JSX_ELEMENTS.map(({ name, runtimeType }) => [name, runtimeType])
 )
-const IS_MAC = shortcutPlatform() === 'mac'
 
 const host = useTemplateRef('host')
 const languageCompartment = new Compartment()
@@ -83,8 +81,12 @@ function languageExtensions(language: CodeEditorLanguage): Extension {
   ]
 }
 
+/** Read-only code still takes a cursor, which picks the layer to mark on the canvas. */
 function editableExtensions(readOnly: boolean): Extension {
-  return [EditorState.readOnly.of(readOnly), EditorView.editable.of(!readOnly)]
+  return [
+    EditorState.readOnly.of(readOnly),
+    EditorView.contentAttributes.of({ 'aria-readonly': String(readOnly) })
+  ]
 }
 
 onMounted(() => {
@@ -120,9 +122,7 @@ onMounted(() => {
       languageCompartment.of(languageExtensions(language)),
       layerLinksExtension({
         typeOf: (tagName) => RUNTIME_TYPES.get(tagName),
-        isLinkModifier: (event) => (IS_MAC ? event.metaKey : event.ctrlKey),
-        onHover: (nodeIds) => emit('hoverLayers', nodeIds),
-        onReveal: (nodeIds) => emit('revealLayers', nodeIds)
+        onActive: (nodeIds) => emit('activeLayers', nodeIds)
       }),
       layerIssueDiagnostics(),
       editableCompartment.of(editableExtensions(readOnly)),
@@ -130,6 +130,7 @@ onMounted(() => {
       EditorView.lineWrapping,
 
       EditorView.updateListener.of((update) => {
+        if (update.focusChanged && !update.view.hasFocus) emit('blur')
         if (!update.docChanged || externalUpdate) return
         emit('update:modelValue', update.state.doc.toString())
       })

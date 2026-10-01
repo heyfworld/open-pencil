@@ -80,6 +80,7 @@ export function renderFromEditorState(
       nodeEditState: state.nodeEditState ?? null,
       remoteCursors: state.remoteCursors,
       designIssues: state.designIssues,
+      codeFocusNodeId: state.codeFocusNodeId,
       autoLayoutHover: state.autoLayoutHover
     },
     state.sceneVersion,

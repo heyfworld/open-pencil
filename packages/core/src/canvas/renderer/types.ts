@@ -69,6 +69,7 @@ export interface RenderOverlays {
     hoveredHandleInfo?: { segmentIndex: number; tangentField: 'tangentStart' | 'tangentEnd' } | null
   } | null
   designIssues?: DesignIssueOverlay | null
+  codeFocusNodeId?: string | null
   remoteCursors?: Array<{
     name: string
     color: Color

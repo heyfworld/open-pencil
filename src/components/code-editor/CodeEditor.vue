@@ -25,17 +25,14 @@ import type { LayerIssue } from '@/app/code/layers/issues'
 import type { LayerLinkSource } from '@/app/code/layers/links'
 import { resolvedAppTheme } from '@/app/shell/theme'
 import { designJSXExtensions } from '@/components/code-editor/extensions'
+import type { LayerSnippet } from '@/components/code-editor/layers/context'
 import { layerIssueDiagnostics, setLayerIssues } from '@/components/code-editor/layers/issues'
 import {
   layerLinks as layerLinksExtension,
   setLayerLinks
 } from '@/components/code-editor/layers/links'
-import {
-  fromLayers,
-  layerPatch,
-  staleAttributes,
-  type LayerSnippet
-} from '@/components/code-editor/layers/patch'
+import { fromLayers, layerPatch } from '@/components/code-editor/layers/patch'
+import { staleAttributes } from '@/components/code-editor/layers/stale'
 import type { CodeEditorLanguage } from '@/components/code-editor/types'
 import { codeEditorTheme } from '@/theme/code/editor'
 

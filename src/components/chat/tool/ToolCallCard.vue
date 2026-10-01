@@ -15,7 +15,9 @@ import {
   toolSummary,
   type ToolCallPart
 } from '@/app/ai/chat/tool-calls/display'
+import { toolChangeFor } from '@/app/ai/tools/changes/store'
 import { classifyToolState } from '@/components/chat/tool/state'
+import ToolChangeView from '@/components/chat/tool/ToolChangeView.vue'
 import ToolNodeChips from '@/components/chat/tool/ToolNodeChips.vue'
 import AppAlert from '@/components/ui/feedback/AppAlert.vue'
 import SegmentedControl from '@/components/ui/select/SegmentedControl.vue'
@@ -48,16 +50,30 @@ const hasOutput = computed(() => state.value === 'done' && output.value !== unde
 // Streaming source is worth watching; other pending calls have nothing to show yet.
 const expandable = computed(() => state.value !== 'pending' || source.value !== null)
 
-const view = ref<'input' | 'output'>('output')
-const shownView = computed(() => {
-  if (!hasOutput.value) return 'input'
-  if (!hasInput.value) return 'output'
-  return view.value
+const change = toolChangeFor(part.toolCallId)
+
+type DetailView = 'changes' | 'input' | 'output'
+const views = computed(() => {
+  const available: { value: DetailView; label: string }[] = []
+  if (change.value) available.push({ value: 'changes', label: ai.value.toolChanges })
+  if (hasInput.value) available.push({ value: 'input', label: ai.value.toolInput })
+  if (hasOutput.value) available.push({ value: 'output', label: ai.value.toolOutput })
+  return available
 })
-const viewOptions = computed(() => [
-  { value: 'input', label: ai.value.toolInput },
-  { value: 'output', label: ai.value.toolOutput }
-])
+const chosenView = ref<DetailView | null>(null)
+// What a call changed is the most useful view; until it exists, its output, then its input.
+const shownView = computed<DetailView | null>(() => {
+  const available = views.value.map((option) => option.value)
+  if (chosenView.value && available.includes(chosenView.value)) return chosenView.value
+  if (available.includes('changes')) return 'changes'
+  return available.includes('output') ? 'output' : (available[0] ?? null)
+})
+const viewModel = computed({
+  get: () => shownView.value ?? '',
+  set: (value: string) => {
+    chosenView.value = views.value.find((option) => option.value === value)?.value ?? null
+  }
+})
 const stateLabel = computed(() => {
   if (state.value === 'pending') return ai.value.toolRunning
   return state.value === 'done' ? ai.value.toolFinished : ai.value.toolError
@@ -88,13 +104,14 @@ function json(value: unknown): string {
         <AppAlert v-if="error" tone="error" :heading="ai.toolError" :description="error" />
         <ToolNodeChips :ids="nodeIds" />
         <SegmentedControl
-          v-if="hasInput && hasOutput"
-          v-model="view"
-          :options="viewOptions"
+          v-if="views.length > 1"
+          v-model="viewModel"
+          :options="views"
           :label="ai.toolDetails"
           size="sm"
         />
-        <template v-if="shownView === 'input'">
+        <ToolChangeView v-if="shownView === 'changes' && change" :change="change" />
+        <template v-else-if="shownView === 'input'">
           <CodeViewer
             v-if="source"
             :code="source.code"
@@ -108,9 +125,14 @@ function json(value: unknown): string {
             :label="ai.toolInput"
           />
         </template>
-        <img v-else-if="image" :src="image" :alt="summary || name" :class="ui.image()" />
+        <img
+          v-else-if="shownView === 'output' && image"
+          :src="image"
+          :alt="summary || name"
+          :class="ui.image()"
+        />
         <CodeViewer
-          v-else-if="hasOutput"
+          v-else-if="shownView === 'output'"
           :code="json(output)"
           language="json"
           :label="ai.toolOutput"

@@ -138,7 +138,10 @@ onMounted(() => {
         typeOf: (tagName) => RUNTIME_TYPES.get(tagName),
         onActive: (nodeIds) => emit('activeLayers', nodeIds),
         describe: (nodeId) => describeLayer?.(nodeId) ?? null,
-        staleMessage: (value) => code.value.canvasChangedExpression({ value })
+        staleMessage: (stale) =>
+          stale.kind === 'value'
+            ? code.value.canvasChangedExpression({ value: stale.value })
+            : code.value.canvasChangedOrder
       }),
       staleAttributes,
       layerIssueDiagnostics(),

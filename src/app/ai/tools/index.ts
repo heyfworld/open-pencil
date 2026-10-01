@@ -1,5 +1,6 @@
 import { tool } from 'ai'
 
+import { graphFromPageSnapshot } from '@open-pencil/core/editor'
 import type { FigmaAPI } from '@open-pencil/core/figma-api'
 import {
   registerComponentCatalog,
@@ -17,7 +18,7 @@ import { useLibraryService } from '@/app/libraries'
 
 import { aiToolDefinitions } from './catalog'
 import { recordToolChange } from './changes/capture'
-import { moveRunToPage, runPageId, stepBudget } from './run'
+import { moveRunToPage, recordRunBaseline, runBaseline, runPageId, stepBudget } from './run'
 
 export { didHitStepLimit, recordStep, runPageId, startRun } from './run'
 
@@ -48,12 +49,20 @@ export function createAITools(store: EditorStore, diagnosticContext?: AIDiagnost
   return toolsToAI(
     aiToolDefinitions,
     {
-      getFigma: () => makeFigmaFromStore(store, runPageId(store)),
+      getFigma: () => {
+        const figma = makeFigmaFromStore(store, runPageId(store))
+        figma.changeBaseline = (pageId) => {
+          const baseline = runBaseline(store, pageId)
+          return baseline ? graphFromPageSnapshot(store.graph, baseline) : null
+        }
+        return figma
+      },
       executeTool: async (def, figma, args, { toolCallId }) => {
         const pageId = figma.currentPageId
         if (!def.mutates) return def.execute(figma, args)
         // Each call keeps its own snapshot; calls in one step may run concurrently.
         const before = store.snapshotPage(pageId)
+        recordRunBaseline(store, before)
         try {
           return await runTool(def, figma, args, pageId)
         } finally {

@@ -1,35 +1,8 @@
-import type {
-  SceneGraph,
-  SceneNode,
-  Fill,
-  Stroke,
-  Effect,
-  Color,
-  GridTrack
-} from '@open-pencil/scene-graph'
+import type { SceneGraph, SceneNode, Effect, Color, GridTrack } from '@open-pencil/scene-graph'
 import { colorToHex8 } from '@open-pencil/scene-graph/color'
 
 export function formatColor(color: Color, opacity = 1): string {
   return colorToHex8(color, opacity)
-}
-
-export function solidFillColor(fills: Fill[]): string | null {
-  const visible = fills.filter((f) => f.visible && f.type === 'SOLID')
-  if (visible.length !== 1) return null
-  return formatColor(visible[0].color, visible[0].opacity)
-}
-
-export function solidStroke(
-  strokes: Stroke[]
-): { color: string; weight: number; dash: number[] | null } | null {
-  const visible = strokes.filter((s) => s.visible)
-  if (visible.length !== 1) return null
-  const s = visible[0]
-  return {
-    color: formatColor(s.color, s.opacity),
-    weight: s.weight,
-    dash: s.dashPattern && s.dashPattern.length > 0 ? [...s.dashPattern] : null
-  }
 }
 
 export function formatShadow(e: Effect): string | null {
@@ -55,12 +28,43 @@ export function escapeJSXText(text: string): string {
  */
 const LITERAL_ATTRIBUTE = /^[^"&]*$/
 
+/** Source code emitted as is, such as a helper call inside a prop value. */
+export class JSXCode {
+  constructor(readonly code: string) {}
+}
+
+const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
+
+/**
+ * A JavaScript literal with `JSXCode` parts inlined. Prop values keep `JSON.stringify`
+ * formatting; `code` formatting, for helper arguments, reads like hand-written source.
+ */
+export function jsLiteral(value: unknown, style: 'json' | 'code' = 'json'): string {
+  if (value instanceof JSXCode) return value.code
+  const separator = style === 'code' ? ', ' : ','
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => jsLiteral(item, style)).join(separator)}]`
+  }
+  if (value !== null && typeof value === 'object') {
+    const entries = Object.entries(value)
+      .filter(([, item]) => item !== undefined)
+      .map(([key, item]) => {
+        const name = style === 'code' && IDENTIFIER.test(key) ? key : JSON.stringify(key)
+        return `${name}:${style === 'code' ? ' ' : ''}${jsLiteral(item, style)}`
+      })
+    if (style === 'json') return `{${entries.join(',')}}`
+    return entries.length > 0 ? `{ ${entries.join(separator)} }` : '{}'
+  }
+  return JSON.stringify(value)
+}
+
 export function formatProp(key: string, value: unknown): string {
+  if (value instanceof JSXCode) return `${key}={${value.code}}`
   if (typeof value === 'string')
     return LITERAL_ATTRIBUTE.test(value) ? `${key}="${value}"` : `${key}={${JSON.stringify(value)}}`
   if (typeof value === 'number') return `${key}={${value}}`
   if (typeof value === 'boolean') return value ? key : `${key}={false}`
-  return `${key}={${JSON.stringify(value)}}`
+  return `${key}={${jsLiteral(value)}}`
 }
 
 export function getNodeContext(node: SceneNode, graph: SceneGraph) {
@@ -102,15 +106,16 @@ export interface CornerRadii {
 }
 
 export function collectCornerRadii(node: SceneNode): CornerRadii | null {
-  if (node.cornerRadius <= 0) return null
   if (node.independentCorners) {
-    return {
+    const corners = {
       tl: node.topLeftRadius,
       tr: node.topRightRadius,
       br: node.bottomRightRadius,
       bl: node.bottomLeftRadius
     }
+    return Object.values(corners).some((radius) => radius > 0) ? corners : null
   }
+  if (node.cornerRadius <= 0) return null
   const r = node.cornerRadius
   return { tl: r, tr: r, br: r, bl: r }
 }
